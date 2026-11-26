@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Pause, Play, Download } from "lucide-react";
 
-export function WaveformPlayer({ blob, title, filename }: { blob: Blob; title: string; filename: string }) {
+export function WaveformPlayer({ blob, title, subtitle, filename }: { blob: Blob; title: string; subtitle?: string; filename: string }) {
   const audioRef = useRef<HTMLAudioElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [url, setUrl] = useState("");
@@ -38,8 +38,8 @@ export function WaveformPlayer({ blob, title, filename }: { blob: Blob; title: s
     if (!c) return;
     const g = c.getContext("2d")!;
     const css = getComputedStyle(c);
-    const on = css.getPropertyValue("--primary").trim() ? `color-mix(in oklab, ${css.getPropertyValue("--primary")} 100%, transparent)` : "red";
-    const off = `color-mix(in oklab, ${css.getPropertyValue("--muted-foreground")} 45%, transparent)`;
+    const on = css.getPropertyValue("--primary").trim();
+    const off = css.getPropertyValue("--border").trim();
     const w = (c.width = c.clientWidth * 2), h = (c.height = c.clientHeight * 2);
     g.clearRect(0, 0, w, h);
     const p = peaks.length ? peaks : Array.from({ length: 180 }, () => 0.05);
@@ -47,7 +47,7 @@ export function WaveformPlayer({ blob, title, filename }: { blob: Blob; title: s
     p.forEach((v, i) => {
       const bh = Math.max(2, v * h * 0.95);
       g.fillStyle = i / p.length <= progress ? on : off;
-      g.fillRect(i * bw, (h - bh) / 2, bw * 0.6, bh);
+      g.beginPath(); g.roundRect(i * bw, (h - bh) / 2, bw * 0.55, bh, 3); g.fill();
     });
   }, [peaks, progress]);
 
@@ -63,28 +63,26 @@ export function WaveformPlayer({ blob, title, filename }: { blob: Blob; title: s
   const fmt = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
 
   return (
-    <div className="industrial-panel p-4">
-      <div className="mb-3 flex items-center justify-between gap-3">
-        <div className="min-w-0">
-          <div className="font-mono text-[10px] uppercase tracking-[0.3em] text-muted-foreground">Now loaded</div>
-          <div className="truncate font-display text-2xl uppercase">{title}</div>
+    <div className="panel p-5">
+      <div className="flex items-center gap-4">
+        <button onClick={toggle} aria-label={playing ? "Pause" : "Play"} className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-primary text-primary-foreground glow transition-transform hover:scale-105">
+          {playing ? <Pause className="h-5 w-5" /> : <Play className="ml-0.5 h-5 w-5" />}
+        </button>
+        <div className="min-w-0 flex-1">
+          <div className="truncate font-display text-base font-bold">{title}</div>
+          {subtitle && <div className="font-mono text-xs text-muted-foreground">{subtitle}</div>}
         </div>
-        <a href={url} download={filename} className="inline-flex items-center gap-2 border border-primary px-3 py-2 font-mono text-xs uppercase text-primary hover:bg-primary hover:text-primary-foreground">
+        <a href={url} download={filename} className="inline-flex items-center gap-2 rounded-full border border-border px-4 py-2 text-xs font-medium transition-colors hover:border-primary hover:text-primary">
           <Download className="h-4 w-4" /> MP3
         </a>
       </div>
-      <div className="flex items-center gap-4">
-        <button onClick={toggle} aria-label={playing ? "Pause" : "Play"} className="grid h-14 w-14 shrink-0 place-items-center bg-primary text-primary-foreground hover:opacity-90">
-          {playing ? <Pause className="h-6 w-6" /> : <Play className="h-6 w-6" />}
-        </button>
-        <canvas ref={canvasRef} onClick={seek} className="h-20 w-full cursor-pointer" />
-      </div>
+      <canvas ref={canvasRef} onClick={seek} className="mt-5 h-20 w-full cursor-pointer" />
       <div className="mt-2 flex justify-between font-mono text-xs text-muted-foreground">
         <span>{fmt(progress * dur)}</span><span>{fmt(dur)}</span>
       </div>
       <audio
         ref={audioRef}
-        src={url}
+        src={url || undefined}
         onPlay={() => setPlaying(true)}
         onPause={() => setPlaying(false)}
         onEnded={() => setPlaying(false)}

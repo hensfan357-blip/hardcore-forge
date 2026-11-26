@@ -28,3 +28,5 @@ use the editor.
   own key and store it in Secrets.
 - **Secrets.** Lovable manages them. Do not put secret values in the repo.
 <!-- LOVABLE:END -->
+
+- Audio is synthesized procedurally in the browser (src/lib/synth.ts, OfflineAudioContext + lamejs MP3); no AI music model, because hosted models cannot produce authentic hardcore.
